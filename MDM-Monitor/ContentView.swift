@@ -82,7 +82,24 @@ struct ContentView: View {
         }
         .padding(20)
         .frame(minWidth: 760, minHeight: 420)
+        .toolbarBackground(.hidden, for: .windowToolbar)
+        .alert("Clear All Events?", isPresented: $showClearConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) {
+                monitor.clear()
+            }
+        } message: {
+            Text("This will delete the entire log file and remove all recorded events. This action cannot be undone.")
+        }
         .toolbar {
+            
+#if DEBUG
+            Button("Simulate Check-In", systemImage: "ladybug") {
+                monitor.simulateCheckIn()
+            }
+            .help("Simulate an MDM check-in event")
+#endif
+            
             Menu("Actions", systemImage: "ellipsis.circle") {
                 Button("Settings", systemImage: "gearshape") {
                     showSettings = true
@@ -94,14 +111,6 @@ struct ContentView: View {
                     showClearConfirmation = true
                 }
                 .disabled(monitor.events.isEmpty)
-                .alert("Clear All Events?", isPresented: $showClearConfirmation) {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Clear", role: .destructive) {
-                        monitor.clear()
-                    }
-                } message: {
-                    Text("This will delete the entire log file and remove all recorded events. This action cannot be undone.")
-                }
 
                 if monitor.logFileURL != nil {
                     Button("Reveal Log File", systemImage: "folder") {
@@ -122,12 +131,6 @@ struct ContentView: View {
             }
             .help("Restart the log stream")
 
-            #if DEBUG
-            Button("Simulate Check-In", systemImage: "ladybug") {
-                monitor.simulateCheckIn()
-            }
-            .help("Simulate an MDM check-in event")
-            #endif
         }
     }
 }
