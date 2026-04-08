@@ -128,6 +128,40 @@ final class MDMCheckInMonitor: ObservableObject {
         }
     }
 
+    func setCustomLogFile(to url: URL) {
+        stop()
+        logFileURL = url
+        buffer.removeAll(keepingCapacity: true)
+        stderrBuffer.removeAll(keepingCapacity: true)
+        loadPersistedEvents()
+        start()
+    }
+
+    func resetToDefaultLogFile() {
+        stop()
+        buffer.removeAll(keepingCapacity: true)
+        stderrBuffer.removeAll(keepingCapacity: true)
+        prepareLogFile()
+        loadPersistedEvents()
+        start()
+    }
+
+    #if DEBUG
+    func simulateCheckIn() {
+        let timestamp = Date()
+        let event = CheckInEvent(
+            timestamp: timestamp,
+            message: "\(dateFormatter.string(from: timestamp)) Device checked in with MDM",
+            rawLogLine: "SIMULATED: Processing server request: DeclarativeManagement for test-device-udid"
+        )
+
+        events.append(event)
+        lastLoggedTimestamp = timestamp
+        appendToLogFile(event)
+        statusText = "Last event at \(dateFormatter.string(from: timestamp))"
+    }
+    #endif
+
     private func consume(_ data: Data) {
         buffer.append(data)
 
