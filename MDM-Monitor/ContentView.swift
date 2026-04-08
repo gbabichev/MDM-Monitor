@@ -16,41 +16,99 @@ struct ContentView: View {
     @State private var showClearConfirmation = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .center, spacing: 8) {
+                    Circle()
+                        .fill(monitor.events.isEmpty ? Color.orange : Color.green)
+                        .frame(width: 8, height: 8)
                     Text("MDM Check-In Monitor")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    Text("Shows a new line whenever `mdmclient` logs a Declarative Management server request.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 8) {
-                    Text("\(monitor.events.count) event\(monitor.events.count == 1 ? "" : "s")")
                         .font(.headline)
+                    Spacer()
                 }
+                Text("Listening for `mdmclient` Declarative Management server requests")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+
+            Divider()
+
+            // Status bar
+            HStack {
+                Text(monitor.statusText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                Text("\(monitor.events.count) event\(monitor.events.count == 1 ? "" : "s")")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.secondary.opacity(0.06))
+
+            Divider()
+
+            // Events list
+            if monitor.events.isEmpty {
+                ContentUnavailableView(
+                    "No Check-Ins Yet",
+                    systemImage: "dot.radiowaves.left.and.right",
+                    description: Text("Waiting for MDM server requests...")
+                )
+            } else {
+                List(monitor.events.reversed()) { event in
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Text(event.message.prefix(19))
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                        Text(event.message.dropFirst(20))
+                            .font(.body)
+                    }
+                    .padding(.vertical, 2)
+                }
+                .listStyle(.plain)
             }
 
-            Text(monitor.statusText)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
+            // Footer with log path
             if let logFileURL = monitor.logFileURL {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Log file")
-                        .font(.footnote.weight(.semibold))
+                Divider()
+                HStack(spacing: 6) {
+                    Image(systemName: "doc.text")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .padding(5)
                     Text(logFileURL.path)
-                        .font(.footnote.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    Button {
+                        NSWorkspace.shared.activateFileViewerSelecting([logFileURL])
+                    } label: {
+                        Label("Reveal in Finder", systemImage: "arrow.up.forward.app")
+                            .labelStyle(.iconOnly)
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(5)
+                    .help("Open log folder in Finder")
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.secondary.opacity(0.06))
             }
 
             if let errorText = monitor.errorText {
+                Divider()
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Log Access Error", systemImage: "exclamationmark.triangle.fill")
                         .font(.headline)
@@ -62,26 +120,10 @@ struct ContentView: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-            }
-
-            if monitor.events.isEmpty {
-                ContentUnavailableView(
-                    "No Check-Ins Yet",
-                    systemImage: "dot.radiowaves.left.and.right",
-                    description: Text("The app is waiting for a matching `mdmclient` log entry.")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List(monitor.events.reversed()) { event in
-                    Text(event.message)
-                        .font(.body.monospaced())
-                        .padding(.vertical, 2)
-                }
-                .listStyle(.plain)
+                .padding(12)
             }
         }
-        .padding(20)
-        .frame(minWidth: 760, minHeight: 420)
+        .frame(minWidth: 680, minHeight: 420)
         .toolbarBackground(.hidden, for: .windowToolbar)
         .alert("Clear All Events?", isPresented: $showClearConfirmation) {
             Button("Cancel", role: .cancel) {}
