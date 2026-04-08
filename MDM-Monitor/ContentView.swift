@@ -21,7 +21,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .center, spacing: 8) {
                     Circle()
-                        .fill(monitor.events.isEmpty ? Color.orange : Color.green)
+                        .fill(monitor.isRunning ? (monitor.events.isEmpty ? Color.orange : Color.green) : Color.red)
                         .frame(width: 8, height: 8)
                     Text("MDM Check-In Monitor")
                         .font(.headline)
@@ -167,11 +167,21 @@ struct ContentView: View {
                 SettingsView(monitor: monitor)
             }
 
-            Button("Restart Stream", systemImage: "arrow.clockwise") {
-                monitor.stop()
-                monitor.start()
+            Menu {
+                Button("Start", systemImage: "play.fill") {
+                    monitor.start()
+                }
+                .disabled(monitor.isRunning)
+
+                Button("Stop", systemImage: "stop.fill") {
+                    monitor.stop()
+                }
+                .disabled(!monitor.isRunning)
+            } label: {
+                Label("Restart", systemImage: "arrow.clockwise")
+            } primaryAction: {
+                monitor.restart()
             }
-            .help("Restart the log stream")
 
         }
     }

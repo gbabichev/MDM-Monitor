@@ -21,6 +21,7 @@ final class MDMCheckInMonitor: ObservableObject {
     @Published private(set) var statusText = "Starting log stream..."
     @Published private(set) var errorText: String?
     @Published private(set) var logFileURL: URL?
+    @Published private(set) var isRunning = false
 
     private let predicate = #"process == "mdmclient""#
     private let targetText = "Processing server request: DeclarativeManagement for"
@@ -90,6 +91,7 @@ final class MDMCheckInMonitor: ObservableObject {
                 self.process = nil
                 self.outputPipe = nil
                 self.errorPipe = nil
+                self.isRunning = false
                 self.updateStatusAfterExit(status: status)
             }
         }
@@ -99,6 +101,7 @@ final class MDMCheckInMonitor: ObservableObject {
             self.process = process
             self.outputPipe = outputPipe
             self.errorPipe = errorPipe
+            self.isRunning = true
             statusText = "Watching mdmclient logs for Declarative Management server requests..."
         } catch {
             let message = "Failed to start log stream: \(error.localizedDescription)"
@@ -114,7 +117,31 @@ final class MDMCheckInMonitor: ObservableObject {
         process = nil
         outputPipe = nil
         errorPipe = nil
+        isRunning = false
         statusText = "Log stream stopped."
+    }
+
+    func restart() {
+        guard let currentProcess = process else {
+            start()
+            return
+        }
+
+        // Clean up handlers immediately so termination doesn't interfere
+        outputPipe?.fileHandleForReading.readabilityHandler = nil
+        errorPipe?.fileHandleForReading.readabilityHandler = nil
+
+        // Temporarily disable the termination handler to prevent it from clearing state
+        currentProcess.terminationHandler = nil
+        currentProcess.terminate()
+
+        // Start fresh
+        process = nil
+        outputPipe = nil
+        errorPipe = nil
+        buffer.removeAll(keepingCapacity: true)
+        stderrBuffer.removeAll(keepingCapacity: true)
+        start()
     }
 
     func clear() {
@@ -129,21 +156,17 @@ final class MDMCheckInMonitor: ObservableObject {
     }
 
     func setCustomLogFile(to url: URL) {
-        stop()
+        restart()
         logFileURL = url
-        buffer.removeAll(keepingCapacity: true)
-        stderrBuffer.removeAll(keepingCapacity: true)
         loadPersistedEvents()
-        start()
     }
 
     func resetToDefaultLogFile() {
-        stop()
+        restart()
         buffer.removeAll(keepingCapacity: true)
         stderrBuffer.removeAll(keepingCapacity: true)
         prepareLogFile()
         loadPersistedEvents()
-        start()
     }
 
     #if DEBUG
