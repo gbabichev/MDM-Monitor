@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var selectedDirectoryURL: URL?
     @State private var showClearConfirmation = false
+    @State private var pulseOpacity: Double = 1.0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -57,11 +58,46 @@ struct ContentView: View {
 
             // Events list
             if monitor.events.isEmpty {
-                ContentUnavailableView(
-                    "No Check-Ins Yet",
-                    systemImage: "dot.radiowaves.left.and.right",
-                    description: Text("Waiting for MDM server requests...")
-                )
+                VStack(spacing: 16) {
+                    Spacer()
+
+                    ZStack {
+                        Image(systemName: "dot.radiowaves.left.and.right")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary.opacity(0.3))
+                            .scaleEffect(1.2)
+
+                        Image(systemName: "dot.radiowaves.left.and.right")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.secondary)
+                            .opacity(pulseOpacity)
+                    }
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                            pulseOpacity = 0.4
+                        }
+                    }
+
+                    Text("Waiting for check-ins")
+                        .font(.title2.weight(.semibold))
+                    Text("The monitor is active and listening for `mdmclient` Declarative Management requests.\nEvents will appear here as they occur.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+
+                    if !monitor.isRunning {
+                        Text("The log stream is currently stopped.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(.orange.opacity(0.1), in: Capsule())
+                    }
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
             } else {
                 List(monitor.events.reversed()) { event in
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
