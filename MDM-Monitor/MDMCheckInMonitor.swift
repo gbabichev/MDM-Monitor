@@ -20,9 +20,11 @@ final class MDMCheckInMonitor: ObservableObject {
     @Published private(set) var events: [CheckInEvent] = []
     @Published private(set) var statusText = "Starting log stream..."
     @Published private(set) var errorText: String?
+    @Published private(set) var logFileURL: URL?
 
     private let predicate = #"process == "mdmclient""#
     private let targetText = "Processing server request: DeclarativeManagement for"
+    private let cooldownInterval: TimeInterval = 120
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -34,6 +36,13 @@ final class MDMCheckInMonitor: ObservableObject {
     private var errorPipe: Pipe?
     private var buffer = Data()
     private var stderrBuffer = Data()
+    private var lastLoggedTimestamp: Date?
+
+    init() {
+        prepareLogFile()
+        loadPersistedEvents()
+        start()
+    }
 
     func start() {
         guard process == nil else { return }
@@ -110,6 +119,13 @@ final class MDMCheckInMonitor: ObservableObject {
 
     func clear() {
         events.removeAll()
+        guard let logFileURL else { return }
+
+        do {
+            try Data().write(to: logFileURL, options: .atomic)
+        } catch {
+            errorText = "Failed to clear log file.\n\nDetails: \(error.localizedDescription)"
+        }
     }
 
     private func consume(_ data: Data) {
@@ -134,6 +150,12 @@ final class MDMCheckInMonitor: ObservableObject {
         guard line.contains(targetText) else { return }
 
         let timestamp = Date()
+        if let lastLoggedTimestamp,
+           timestamp.timeIntervalSince(lastLoggedTimestamp) < cooldownInterval {
+            statusText = "Ignored duplicate check-in within 120 seconds."
+            return
+        }
+
         let event = CheckInEvent(
             timestamp: timestamp,
             message: "\(dateFormatter.string(from: timestamp)) Device checked in with MDM",
@@ -141,6 +163,8 @@ final class MDMCheckInMonitor: ObservableObject {
         )
 
         events.append(event)
+        lastLoggedTimestamp = timestamp
+        appendToLogFile(event)
         statusText = "Last event at \(dateFormatter.string(from: timestamp))"
     }
 
@@ -173,6 +197,66 @@ final class MDMCheckInMonitor: ObservableObject {
         statusText = status == 0
             ? "Log stream stopped."
             : "Log stream exited with code \(status)."
+    }
+
+    private func prepareLogFile() {
+        do {
+            let appSupportURL = try FileManager.default.url(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask,
+                appropriateFor: nil,
+                create: true
+            )
+
+            let directoryURL = appSupportURL
+                .appendingPathComponent(Bundle.main.bundleIdentifier ?? "MDM-Monitor", isDirectory: true)
+
+            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+
+            let fileURL = directoryURL.appendingPathComponent("MDM-CheckIns.log")
+            if !FileManager.default.fileExists(atPath: fileURL.path) {
+                FileManager.default.createFile(atPath: fileURL.path, contents: nil)
+            }
+
+            logFileURL = fileURL
+        } catch {
+            errorText = "Failed to prepare the app log file.\n\nDetails: \(error.localizedDescription)"
+        }
+    }
+
+    private func loadPersistedEvents() {
+        guard let logFileURL else { return }
+        guard let contents = try? String(contentsOf: logFileURL, encoding: .utf8) else { return }
+
+        events = contents
+            .split(whereSeparator: \.isNewline)
+            .map(String.init)
+            .map { storedLine in
+                CheckInEvent(
+                    timestamp: dateFormatter.date(from: String(storedLine.prefix(19))) ?? .now,
+                    message: storedLine,
+                    rawLogLine: ""
+                )
+            }
+
+        if let lastEvent = events.last {
+            lastLoggedTimestamp = lastEvent.timestamp
+            statusText = "Loaded \(events.count) logged event\(events.count == 1 ? "" : "s"). Last event at \(dateFormatter.string(from: lastEvent.timestamp))"
+        }
+    }
+
+    private func appendToLogFile(_ event: CheckInEvent) {
+        guard let logFileURL else { return }
+        guard let data = "\(event.message)\n".data(using: .utf8) else { return }
+
+        do {
+            let fileHandle = try FileHandle(forWritingTo: logFileURL)
+            defer { try? fileHandle.close() }
+            try fileHandle.seekToEnd()
+            try fileHandle.write(contentsOf: data)
+        } catch {
+            errorText = "Failed to write to the app log file.\n\nDetails: \(error.localizedDescription)"
+        }
     }
 
     deinit {

@@ -5,10 +5,11 @@
 //  Created by George Babichev on 4/2/26.
 //
 
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var monitor = MDMCheckInMonitor()
+    @EnvironmentObject private var monitor: MDMCheckInMonitor
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -33,6 +34,12 @@ struct ContentView: View {
                         }
                         .disabled(monitor.events.isEmpty)
 
+                        if let logFileURL = monitor.logFileURL {
+                            Button("Reveal Log File") {
+                                NSWorkspace.shared.activateFileViewerSelecting([logFileURL])
+                            }
+                        }
+
                         Button("Restart Stream") {
                             monitor.stop()
                             monitor.start()
@@ -44,6 +51,17 @@ struct ContentView: View {
             Text(monitor.statusText)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            if let logFileURL = monitor.logFileURL {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Log file")
+                        .font(.footnote.weight(.semibold))
+                    Text(logFileURL.path)
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
 
             if let errorText = monitor.errorText {
                 VStack(alignment: .leading, spacing: 8) {
@@ -68,26 +86,14 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List(monitor.events.reversed()) { event in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(event.message)
-                            .font(.body.monospaced())
-                        Text(event.rawLogLine)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                    }
-                    .padding(.vertical, 2)
+                    Text(event.message)
+                        .font(.body.monospaced())
+                        .padding(.vertical, 2)
                 }
                 .listStyle(.plain)
             }
         }
         .padding(20)
         .frame(minWidth: 760, minHeight: 420)
-        .onAppear {
-            monitor.start()
-        }
-        .onDisappear {
-            monitor.stop()
-        }
     }
 }
