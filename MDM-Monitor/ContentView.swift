@@ -222,57 +222,110 @@ struct SettingsView: View {
     @State private var showFolderPicker = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("Settings")
-                    .font(.headline)
+        VStack(spacing: 20) {
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(.orange.opacity(0.14))
+                        .frame(width: 52, height: 52)
+
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(.orange)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Settings")
+                        .font(.title2.weight(.semibold))
+                    Text("Choose where check-in events are written and manage the saved log location.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 Spacer()
             }
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Log File Location")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Current log file:")
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Log File Location", systemImage: "doc.text")
+                        .font(.headline)
+                    Text("The monitor appends new check-ins to this file.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Current log file")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
 
                     if let logFileURL = monitor.logFileURL {
                         Text(logFileURL.path)
                             .font(.caption.monospaced())
                             .textSelection(.enabled)
-                            .padding(8)
+                            .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                            .background(.background.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(.quaternary, lineWidth: 1)
+                            }
+                    } else {
+                        Text("No log file configured")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(.background.opacity(0.72), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(.quaternary, lineWidth: 1)
+                            }
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Divider()
-
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Button("Change Folder") {
                     showFolderPicker = true
                 }
+                .buttonStyle(.borderedProminent)
 
                 Button("Reset to Default") {
                     monitor.resetToDefaultLogFile()
                 }
                 .buttonStyle(.bordered)
+            }
 
+            HStack {
                 Spacer()
 
                 Button("Close") {
                     dismiss()
                 }
+                .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.escape)
             }
         }
-        .padding()
-        .frame(width: 420)
+        .padding(24)
+        .frame(width: 520)
+        .background {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(.regularMaterial)
+                .overlay(alignment: .topLeading) {
+                    Circle()
+                        .fill(.orange.opacity(0.16))
+                        .frame(width: 220, height: 220)
+                        .blur(radius: 18)
+                        .offset(x: -34, y: -46)
+                }
+                .overlay(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(.white.opacity(0.35), lineWidth: 1)
+                }
+        }
         .fileImporter(
             isPresented: $showFolderPicker,
             allowedContentTypes: [.folder],
