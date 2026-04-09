@@ -175,45 +175,41 @@ struct ContentView: View {
             .help("Simulate an MDM check-in event")
 #endif
             
-            Menu("Actions", systemImage: "ellipsis.circle") {
-                Button("Settings", systemImage: "gearshape") {
-                    showSettings = true
-                }
-
-                Divider()
-
-                Button("Clear", systemImage: "eraser") {
-                    showClearConfirmation = true
-                }
-                .disabled(monitor.events.isEmpty)
-
-                if monitor.logFileURL != nil {
-                    Button("Reveal Log File", systemImage: "folder") {
-                        if let logFileURL = monitor.logFileURL {
-                            NSWorkspace.shared.activateFileViewerSelecting([logFileURL])
-                        }
-                    }
-                }
-            }
-            .help("Additional actions")
-            .sheet(isPresented: $showSettings) {
-                SettingsView(monitor: monitor)
-            }
-
             Menu {
-                Button("Start", systemImage: "play.fill") {
+                Button("Restart Service", systemImage: "arrow.clockwise") {
+                    monitor.restart()
+                }
+
+                Button("Stop Monitor", systemImage: "stop.fill") {
+                    monitor.stop()
+                }
+                .disabled(!monitor.isRunning)
+
+                Button("Start Monitor", systemImage: "play.fill") {
                     monitor.start()
                 }
                 .disabled(monitor.isRunning)
 
-                Button("Stop", systemImage: "stop.fill") {
-                    monitor.stop()
+                Divider()
+                
+                Button("Clear Log", systemImage: "eraser") {
+                    showClearConfirmation = true
                 }
-                .disabled(!monitor.isRunning)
+                .disabled(monitor.events.isEmpty)
+
+                if let logFileURL = monitor.logFileURL {
+                    Button("Reveal Log File", systemImage: "folder") {
+                        NSWorkspace.shared.activateFileViewerSelecting([logFileURL])
+                    }
+                }
             } label: {
-                Label("Restart", systemImage: "arrow.clockwise")
+                Label("Settings", systemImage: "gearshape")
             } primaryAction: {
-                monitor.restart()
+                showSettings = true
+            }
+            .help("Open settings or monitor actions")
+            .sheet(isPresented: $showSettings) {
+                SettingsView(monitor: monitor)
             }
 
         }
