@@ -28,9 +28,6 @@ struct ContentView: View {
                         .font(.headline)
                     Spacer()
                 }
-                Text("Listening for `mdmclient` Declarative Management server requests")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)

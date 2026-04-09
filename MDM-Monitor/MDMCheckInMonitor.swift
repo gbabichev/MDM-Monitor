@@ -24,7 +24,8 @@ final class MDMCheckInMonitor: ObservableObject {
     @Published private(set) var isRunning = false
 
     private let predicate = #"process == "mdmclient""#
-    private let targetText = "Processing server request: DeclarativeManagement for"
+    private let targetText = "Processing server request:"
+    //private let targetText = "Processing server request: DeclarativeManagement for"
     private let cooldownInterval: TimeInterval = 120
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
