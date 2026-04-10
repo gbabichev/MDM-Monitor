@@ -233,10 +233,10 @@ final class MDMCheckInMonitor: ObservableObject {
         let timestamp = Date()
         let event = CheckInEvent(
             timestamp: timestamp,
-            message: "\(dateFormatter.string(from: timestamp)) \(monitoringMode == .mdmclient ? "Device checked in with MDM" : "Jamf activity detected")",
+            message: "\(dateFormatter.string(from: timestamp)) \(monitoringMode == .mdmclient ? "Device checked in with MDM" : "Device checked in with JAMF Pro")",
             rawLogLine: monitoringMode == .mdmclient
                 ? "SIMULATED: Processing server request: DeclarativeManagement for test-device-udid"
-                : "SIMULATED: Thu Apr 09 19:36:33 TestUser's Virtual Machine jamf[5426]: Checking for patches..."
+                : "SIMULATED: Fri Apr 10 04:38:51 TestUser's Virtual Machine jamf[13474]: Checking for policies triggered by \"recurring check-in\" for user \"testuser\"..."
         )
 
         events.append(event)
@@ -296,22 +296,24 @@ final class MDMCheckInMonitor: ObservableObject {
     }
 
     private func handleJamfLine(_ line: String) {
-        guard line.contains(" jamf["), let messageRange = line.range(of: "]: ") else { return }
+        guard line.contains(" jamf["),
+              line.contains(#"Checking for policies triggered by "recurring check-in""#)
+        else {
+            return
+        }
 
         let timestamp = Date()
-        let jamfMessage = String(line[messageRange.upperBound...]).trimmingCharacters(in: .whitespaces)
-        guard !jamfMessage.isEmpty else { return }
 
         let event = CheckInEvent(
             timestamp: timestamp,
-            message: "\(dateFormatter.string(from: timestamp)) \(jamfMessage)",
+            message: "\(dateFormatter.string(from: timestamp)) Device checked in with JAMF Pro",
             rawLogLine: line
         )
 
         events.append(event)
         lastLoggedTimestamp = timestamp
         appendToLogFile(event)
-        statusText = "Last JAMF activity at \(dateFormatter.string(from: timestamp))"
+        statusText = "Last JAMF check-in at \(dateFormatter.string(from: timestamp))"
     }
 
     private func consumeError(_ data: Data) {
@@ -328,8 +330,8 @@ final class MDMCheckInMonitor: ObservableObject {
                 : "macOS denied access to the live system log."
 
             let message = monitoringMode == .mdmclient
-                ? "Permission denied while reading system logs. Run the app from an admin-approved context or test `/usr/bin/log stream` in Terminal with `sudo`."
-                : "Permission denied while reading `/var/log/jamf.log`. Run the app from an admin-approved context or confirm the file is readable."
+                ? "Permission denied while reading system logs. Run the app as admin."
+                : "Permission denied while reading `/var/log/jamf.log`. Confirm that the file is readable."
             statusText = message
             errorText = "\(message)\n\nDetails: \(detail)"
             return
