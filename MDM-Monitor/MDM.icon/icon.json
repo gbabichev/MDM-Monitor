@@ -1,0 +1,57 @@
+{
+  "fill" : {
+    "solid" : "extended-gray:1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "blur-material" : 1,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill-specializations" : [
+            {
+              "value" : {
+                "solid" : "extended-gray:1.00000,1.00000"
+              }
+            },
+            {
+              "appearance" : "light",
+              "value" : "automatic"
+            }
+          ],
+          "glass" : true,
+          "image-name" : "MDM.png",
+          "name" : "MDM",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              17.546875000000114,
+              26.451751373626394
+            ]
+          }
+        }
+      ],
+      "position" : {
+        "scale" : 1.4,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.1
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
