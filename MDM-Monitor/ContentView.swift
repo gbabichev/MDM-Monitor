@@ -310,9 +310,6 @@ struct ContentView: View {
                 .background(.background.opacity(0.72), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Log file")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 Text(logFileURL.path)
                     .font(.caption.monospaced())
                     .foregroundStyle(.tertiary)
