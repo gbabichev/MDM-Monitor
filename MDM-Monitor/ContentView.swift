@@ -374,6 +374,25 @@ struct SettingsView: View {
             }
 
             VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Monitoring Source", systemImage: "dot.radiowaves.left.and.right")
+                        .font(.headline)
+
+                    Text("Choose whether to watch Apple MDM requests from `mdmclient` or JAMF Pro activity from `/var/log/jamf.log`.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Picker("Monitoring Source", selection: Binding(
+                        get: { monitor.monitoringMode },
+                        set: { monitor.setMonitoringMode($0) }
+                    )) {
+                        ForEach(MonitoringMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Log File Location", systemImage: "doc.text")
                         .font(.headline)

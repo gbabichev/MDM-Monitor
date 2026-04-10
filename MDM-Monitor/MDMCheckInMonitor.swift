@@ -8,6 +8,40 @@
 import Combine
 import Foundation
 
+enum MonitoringMode: String, CaseIterable, Identifiable {
+    case mdmclient
+    case jamfPro
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .mdmclient:
+            return "Intune / mdmclient"
+        case .jamfPro:
+            return "JAMF Pro"
+        }
+    }
+
+    var statusDescription: String {
+        switch self {
+        case .mdmclient:
+            return "Watching mdmclient logs for Declarative Management server requests..."
+        case .jamfPro:
+            return "Watching /var/log/jamf.log for JAMF Pro activity..."
+        }
+    }
+
+    var stoppedDescription: String {
+        switch self {
+        case .mdmclient:
+            return "mdmclient monitoring stopped."
+        case .jamfPro:
+            return "JAMF Pro monitoring stopped."
+        }
+    }
+}
+
 struct CheckInEvent: Identifiable {
     let id = UUID()
     let timestamp: Date
@@ -22,11 +56,10 @@ final class MDMCheckInMonitor: ObservableObject {
     @Published private(set) var errorText: String?
     @Published private(set) var logFileURL: URL?
     @Published private(set) var isRunning = false
+    @Published private(set) var monitoringMode: MonitoringMode
 
-    private let predicate = #"process == "mdmclient""#
-    private let targetText = "Processing server request:"
-    //private let targetText = "Processing server request: DeclarativeManagement for"
     private let cooldownInterval: TimeInterval = 120
+    private let modeDefaultsKey = "monitoringMode"
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -41,9 +74,25 @@ final class MDMCheckInMonitor: ObservableObject {
     private var lastLoggedTimestamp: Date?
 
     init() {
+        monitoringMode = MonitoringMode(rawValue: UserDefaults.standard.string(forKey: modeDefaultsKey) ?? "") ?? .mdmclient
         prepareLogFile()
         loadPersistedEvents()
         start()
+    }
+
+    func setMonitoringMode(_ mode: MonitoringMode) {
+        guard monitoringMode != mode else { return }
+        UserDefaults.standard.set(mode.rawValue, forKey: modeDefaultsKey)
+
+        Task { @MainActor [weak self] in
+            self?.applyMonitoringMode(mode)
+        }
+    }
+
+    private func applyMonitoringMode(_ mode: MonitoringMode) {
+        guard monitoringMode != mode else { return }
+        monitoringMode = mode
+        restart()
     }
 
     func start() {
@@ -57,13 +106,22 @@ final class MDMCheckInMonitor: ObservableObject {
         let outputPipe = Pipe()
         let errorPipe = Pipe()
 
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/log")
-        process.arguments = [
-            "stream",
-            "--style", "compact",
-            "--info",
-            "--predicate", predicate
-        ]
+        switch monitoringMode {
+        case .mdmclient:
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/log")
+            process.arguments = [
+                "stream",
+                "--style", "compact",
+                "--info",
+                "--predicate", #"process == "mdmclient""#
+            ]
+        case .jamfPro:
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/tail")
+            process.arguments = [
+                "-n", "0",
+                "-F", "/var/log/jamf.log"
+            ]
+        }
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
@@ -103,7 +161,7 @@ final class MDMCheckInMonitor: ObservableObject {
             self.outputPipe = outputPipe
             self.errorPipe = errorPipe
             self.isRunning = true
-            statusText = "Watching mdmclient logs for Declarative Management server requests..."
+            statusText = monitoringMode.statusDescription
         } catch {
             let message = "Failed to start log stream: \(error.localizedDescription)"
             statusText = message
@@ -119,7 +177,7 @@ final class MDMCheckInMonitor: ObservableObject {
         outputPipe = nil
         errorPipe = nil
         isRunning = false
-        statusText = "Log stream stopped."
+        statusText = monitoringMode.stoppedDescription
     }
 
     func restart() {
@@ -175,8 +233,10 @@ final class MDMCheckInMonitor: ObservableObject {
         let timestamp = Date()
         let event = CheckInEvent(
             timestamp: timestamp,
-            message: "\(dateFormatter.string(from: timestamp)) Device checked in with MDM",
-            rawLogLine: "SIMULATED: Processing server request: DeclarativeManagement for test-device-udid"
+            message: "\(dateFormatter.string(from: timestamp)) \(monitoringMode == .mdmclient ? "Device checked in with MDM" : "Jamf activity detected")",
+            rawLogLine: monitoringMode == .mdmclient
+                ? "SIMULATED: Processing server request: DeclarativeManagement for test-device-udid"
+                : "SIMULATED: Thu Apr 09 19:36:33 TestUser's Virtual Machine jamf[5426]: Checking for patches..."
         )
 
         events.append(event)
@@ -205,7 +265,16 @@ final class MDMCheckInMonitor: ObservableObject {
     }
 
     private func handle(_ line: String) {
-        guard line.contains(targetText) else { return }
+        switch monitoringMode {
+        case .mdmclient:
+            handleMDMClientLine(line)
+        case .jamfPro:
+            handleJamfLine(line)
+        }
+    }
+
+    private func handleMDMClientLine(_ line: String) {
+        guard line.contains("Processing server request:") else { return }
 
         let timestamp = Date()
         if let lastLoggedTimestamp,
@@ -226,6 +295,25 @@ final class MDMCheckInMonitor: ObservableObject {
         statusText = "Last event at \(dateFormatter.string(from: timestamp))"
     }
 
+    private func handleJamfLine(_ line: String) {
+        guard line.contains(" jamf["), let messageRange = line.range(of: "]: ") else { return }
+
+        let timestamp = Date()
+        let jamfMessage = String(line[messageRange.upperBound...]).trimmingCharacters(in: .whitespaces)
+        guard !jamfMessage.isEmpty else { return }
+
+        let event = CheckInEvent(
+            timestamp: timestamp,
+            message: "\(dateFormatter.string(from: timestamp)) \(jamfMessage)",
+            rawLogLine: line
+        )
+
+        events.append(event)
+        lastLoggedTimestamp = timestamp
+        appendToLogFile(event)
+        statusText = "Last JAMF activity at \(dateFormatter.string(from: timestamp))"
+    }
+
     private func consumeError(_ data: Data) {
         stderrBuffer.append(data)
     }
@@ -239,7 +327,9 @@ final class MDMCheckInMonitor: ObservableObject {
                 ? stderrText!
                 : "macOS denied access to the live system log."
 
-            let message = "Permission denied while reading system logs. Run the app from an admin-approved context or test `/usr/bin/log stream` in Terminal with `sudo`."
+            let message = monitoringMode == .mdmclient
+                ? "Permission denied while reading system logs. Run the app from an admin-approved context or test `/usr/bin/log stream` in Terminal with `sudo`."
+                : "Permission denied while reading `/var/log/jamf.log`. Run the app from an admin-approved context or confirm the file is readable."
             statusText = message
             errorText = "\(message)\n\nDetails: \(detail)"
             return
@@ -253,7 +343,7 @@ final class MDMCheckInMonitor: ObservableObject {
 
         errorText = nil
         statusText = status == 0
-            ? "Log stream stopped."
+            ? monitoringMode.stoppedDescription
             : "Log stream exited with code \(status)."
     }
 
