@@ -25,6 +25,7 @@ The app:
 - watches for a specific log pattern that represents a meaningful check-in
 - adds a normalized event to the UI
 - appends that normalized event to the app log file
+- Sends a desktop notification & badge icon when an MDM Check-In is received.
 - lets you start, stop, restart, clear, and reveal the app log from the toolbar
 
 The app log is stored in Application Support under the app bundle identifier and defaults to:
