@@ -74,6 +74,7 @@ struct MDM_MonitorApp: App {
     @StateObject private var notificationCoordinator = NotificationCoordinator()
     @Environment(\.scenePhase) private var scenePhase
     @State private var monitorSubscription: AnyCancellable?
+    @State private var showAbout = false
 
     var body: some Scene {
         WindowGroup {
@@ -93,6 +94,18 @@ struct MDM_MonitorApp: App {
                             }
                     }
                 }
+                .sheet(isPresented: $showAbout) {
+                    AboutView()
+                }
+        }
+        .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button {
+                    showAbout = true
+                } label: {
+                    Label("About MDM Monitor", systemImage: "info.circle")
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
