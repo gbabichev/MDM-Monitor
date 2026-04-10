@@ -390,6 +390,33 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                 }
 
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Notifications", systemImage: "bell.badge")
+                        .font(.headline)
+
+                    Text("Show a dock badge and desktop notification when a new check-in is detected.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    SettingsRow(
+                        "Enable Notification Support",
+                        subtitle: "Show collection and recipe titles in the toolbar."
+                    ) {
+                        Toggle(
+                            "",
+                            isOn: Binding(
+                                get: { monitor.notificationsEnabled },
+                                set: { monitor.setNotificationsEnabled($0) }
+                            )
+                        )
+                        .toggleStyle(.switch)
+                    }
+                }
+
+                Divider()
+                
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Log File Location", systemImage: "doc.text")
                         .font(.headline)

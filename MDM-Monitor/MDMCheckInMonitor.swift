@@ -57,9 +57,13 @@ final class MDMCheckInMonitor: ObservableObject {
     @Published private(set) var logFileURL: URL?
     @Published private(set) var isRunning = false
     @Published private(set) var monitoringMode: MonitoringMode
+    @Published private(set) var notificationsEnabled: Bool
+
+    let liveEventPublisher = PassthroughSubject<CheckInEvent, Never>()
 
     private let cooldownInterval: TimeInterval = 120
     private let modeDefaultsKey = "monitoringMode"
+    private let notificationsDefaultsKey = "notificationsEnabled"
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -75,9 +79,16 @@ final class MDMCheckInMonitor: ObservableObject {
 
     init() {
         monitoringMode = MonitoringMode(rawValue: UserDefaults.standard.string(forKey: modeDefaultsKey) ?? "") ?? .mdmclient
+        notificationsEnabled = UserDefaults.standard.object(forKey: notificationsDefaultsKey) as? Bool ?? true
         prepareLogFile()
         loadPersistedEvents()
         start()
+    }
+
+    func setNotificationsEnabled(_ isEnabled: Bool) {
+        guard notificationsEnabled != isEnabled else { return }
+        notificationsEnabled = isEnabled
+        UserDefaults.standard.set(isEnabled, forKey: notificationsDefaultsKey)
     }
 
     func setMonitoringMode(_ mode: MonitoringMode) {
@@ -243,6 +254,7 @@ final class MDMCheckInMonitor: ObservableObject {
         lastLoggedTimestamp = timestamp
         appendToLogFile(event)
         statusText = "Last event at \(dateFormatter.string(from: timestamp))"
+        liveEventPublisher.send(event)
     }
     #endif
 
@@ -288,11 +300,7 @@ final class MDMCheckInMonitor: ObservableObject {
             message: "\(dateFormatter.string(from: timestamp)) Device checked in with MDM",
             rawLogLine: line
         )
-
-        events.append(event)
-        lastLoggedTimestamp = timestamp
-        appendToLogFile(event)
-        statusText = "Last event at \(dateFormatter.string(from: timestamp))"
+        recordLiveEvent(event, statusText: "Last event at \(dateFormatter.string(from: timestamp))")
     }
 
     private func handleJamfLine(_ line: String) {
@@ -309,11 +317,7 @@ final class MDMCheckInMonitor: ObservableObject {
             message: "\(dateFormatter.string(from: timestamp)) Device checked in with JAMF Pro",
             rawLogLine: line
         )
-
-        events.append(event)
-        lastLoggedTimestamp = timestamp
-        appendToLogFile(event)
-        statusText = "Last JAMF check-in at \(dateFormatter.string(from: timestamp))"
+        recordLiveEvent(event, statusText: "Last JAMF check-in at \(dateFormatter.string(from: timestamp))")
     }
 
     private func consumeError(_ data: Data) {
@@ -407,6 +411,14 @@ final class MDMCheckInMonitor: ObservableObject {
         } catch {
             errorText = "Failed to write to the app log file.\n\nDetails: \(error.localizedDescription)"
         }
+    }
+
+    private func recordLiveEvent(_ event: CheckInEvent, statusText: String) {
+        events.append(event)
+        lastLoggedTimestamp = event.timestamp
+        appendToLogFile(event)
+        self.statusText = statusText
+        liveEventPublisher.send(event)
     }
 
     deinit {
