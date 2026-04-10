@@ -81,12 +81,12 @@ struct ContentView: View {
         }
         .toolbar {
             
-#if DEBUG
-            Button("Simulate Check-In", systemImage: "ladybug") {
-                monitor.simulateCheckIn()
-            }
-            .help("Simulate an MDM check-in event")
-#endif
+//#if DEBUG
+//            Button("Simulate Check-In", systemImage: "ladybug") {
+//                monitor.simulateCheckIn()
+//            }
+//            .help("Simulate an MDM check-in event")
+//#endif
             
             Menu {
                 Button("Restart Service", systemImage: "arrow.clockwise") {
@@ -375,7 +375,7 @@ struct SettingsView: View {
                     Label("Monitoring Source", systemImage: "dot.radiowaves.left.and.right")
                         .font(.headline)
 
-                    Text("Choose whether to watch Apple MDM requests from `mdmclient` or JAMF Pro activity from `/var/log/jamf.log`.")
+                    Text("Choose whether to watch Apple MDM requests from `mdmclient` or JAMF Pro logs.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

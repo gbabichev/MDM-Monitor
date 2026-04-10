@@ -13,6 +13,10 @@ It supports two monitoring modes:
 
 In both modes, the app reduces noisy raw log lines down to a single readable event in the UI and in the app log file.
 
+<p align="center">
+  <img src="./docs/App1.jpg" alt="Code light mode" width="50%"><img src="./docs/App2.jpg" alt="Code dark mode" width="50%">
+</p>
+
 ## What The App Does
 
 The app:
