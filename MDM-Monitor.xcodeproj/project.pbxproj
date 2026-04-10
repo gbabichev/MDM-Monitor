@@ -10,9 +10,22 @@
 		FFDE5D902F7F0D3C008C9D62 /* MDM-Monitor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MDM-Monitor.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FFDF72392F898504008101E7 /* Exceptions for "MDM-Monitor" folder in "MDM-Monitor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FFDE5D8F2F7F0D3C008C9D62 /* MDM-Monitor */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FFDE5D922F7F0D3C008C9D62 /* MDM-Monitor */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FFDF72392F898504008101E7 /* Exceptions for "MDM-Monitor" folder in "MDM-Monitor" target */,
+			);
 			path = "MDM-Monitor";
 			sourceTree = "<group>";
 		};
@@ -258,6 +271,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MDM-Monitor/Info.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -289,6 +303,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MDM-Monitor/Info.plist";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

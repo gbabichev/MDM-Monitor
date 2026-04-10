@@ -25,6 +25,7 @@ struct LiveAppIconView: View {
 }
 
 struct AboutView: View {
+    @ObservedObject private var updateCenter = AppUpdateCenter.shared
     private let developerWebsiteURL = URL(string: "https://georgebabichev.com")
 
     var body: some View {
@@ -84,6 +85,22 @@ struct AboutView: View {
                 .font(.callout)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
+
+            VStack(spacing: 8) {
+                Button {
+                    updateCenter.checkForUpdates(trigger: .manual)
+                } label: {
+                    Label("Check for Updates…", systemImage: "arrow.triangle.2.circlepath.circle")
+                }
+                .disabled(updateCenter.isChecking)
+
+                if let lastStatusMessage = updateCenter.lastStatusMessage {
+                    Text(lastStatusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
         }
         .padding(24)
         .frame(width: 380)

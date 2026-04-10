@@ -72,15 +72,22 @@ struct MDM_MonitorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var monitor = MDMCheckInMonitor()
     @StateObject private var notificationCoordinator = NotificationCoordinator()
+    @StateObject private var updateCenter = AppUpdateCenter.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var monitorSubscription: AnyCancellable?
     @State private var showAbout = false
+    @State private var hasStartedUpdateCheck = false
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(monitor)
                 .onAppear {
+                    if !hasStartedUpdateCheck {
+                        hasStartedUpdateCheck = true
+                        updateCenter.checkForUpdates(trigger: .automaticLaunch)
+                    }
+
                     if monitor.notificationsEnabled {
                         notificationCoordinator.requestAuthorizationIfNeeded()
                     }
@@ -105,6 +112,14 @@ struct MDM_MonitorApp: App {
                 } label: {
                     Label("About MDM Monitor", systemImage: "info.circle")
                 }
+            }
+            CommandGroup(after: .appInfo) {
+                Button {
+                    updateCenter.checkForUpdates(trigger: .manual)
+                } label: {
+                    Label("Check for Updates…", systemImage: "arrow.triangle.2.circlepath.circle")
+                }
+                .disabled(updateCenter.isChecking)
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
