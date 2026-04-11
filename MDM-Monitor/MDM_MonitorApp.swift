@@ -73,7 +73,6 @@ struct MDM_MonitorApp: App {
     @StateObject private var monitor = MDMCheckInMonitor()
     @StateObject private var notificationCoordinator = NotificationCoordinator()
     @StateObject private var updateCenter = AppUpdateCenter.shared
-    @Environment(\.scenePhase) private var scenePhase
     @State private var monitorSubscription: AnyCancellable?
     @State private var showAbout = false
     @State private var hasStartedUpdateCheck = false
@@ -104,6 +103,9 @@ struct MDM_MonitorApp: App {
                 .sheet(isPresented: $showAbout) {
                     AboutView()
                 }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    notificationCoordinator.clearDeliveredNotifications()
+                }
         }
         .commands {
             CommandGroup(replacing: .appInfo) {
@@ -120,11 +122,6 @@ struct MDM_MonitorApp: App {
                     Label("Check for Updates…", systemImage: "arrow.triangle.2.circlepath.circle")
                 }
                 .disabled(updateCenter.isChecking)
-            }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
-                notificationCoordinator.clearDeliveredNotifications()
             }
         }
         .onChange(of: monitor.notificationsEnabled) { _, isEnabled in
