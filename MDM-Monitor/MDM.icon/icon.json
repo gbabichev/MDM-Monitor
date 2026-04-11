@@ -1,32 +1,30 @@
 {
   "fill" : {
-    "solid" : "extended-gray:1.00000,1.00000"
+    "automatic-gradient" : "display-p3:0.22664,0.20768,0.58109,1.00000",
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 0
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.7
+      }
+    }
   },
   "groups" : [
     {
       "blur-material" : 1,
       "layers" : [
         {
-          "blend-mode" : "normal",
-          "fill-specializations" : [
-            {
-              "value" : {
-                "solid" : "extended-gray:1.00000,1.00000"
-              }
-            },
-            {
-              "appearance" : "light",
-              "value" : "automatic"
-            }
-          ],
-          "glass" : true,
-          "image-name" : "MDM.png",
-          "name" : "MDM",
+          "glass" : false,
+          "image-name" : "MDM 2.png",
+          "name" : "MDM 2",
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
-              17.546875000000114,
-              26.451751373626394
+              12.857142857142833,
+              25.714285714285722
             ]
           }
         }
@@ -39,12 +37,13 @@
         ]
       },
       "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
+        "kind" : "layer-color",
+        "opacity" : 1
       },
+      "specular" : true,
       "translucency" : {
-        "enabled" : true,
-        "value" : 0.1
+        "enabled" : false,
+        "value" : 0.5
       }
     }
   ],
