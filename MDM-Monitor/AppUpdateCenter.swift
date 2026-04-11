@@ -1,8 +1,5 @@
 //
 //  AppUpdateCenter.swift
-//  Zippy
-//
-//  Created by Codex on 2/18/26.
 //
 //  Purpose:
 //  Provides a reusable app-level update check flow backed by repository tags,

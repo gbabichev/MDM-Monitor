@@ -2,7 +2,6 @@
 //  MDMCheckInMonitor.swift
 //  MDM-Monitor
 //
-//  Created by Codex on 4/2/26.
 //
 
 import Combine
