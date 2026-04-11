@@ -81,12 +81,12 @@ struct ContentView: View {
         }
         .toolbar {
             
-//#if DEBUG
-//            Button("Simulate Check-In", systemImage: "ladybug") {
-//                monitor.simulateCheckIn()
-//            }
-//            .help("Simulate an MDM check-in event")
-//#endif
+#if DEBUG
+            Button("Simulate Check-In", systemImage: "ladybug") {
+                monitor.simulateCheckIn()
+            }
+            .help("Simulate an MDM check-in event")
+#endif
             
             Menu {
                 Button("Restart Service", systemImage: "arrow.clockwise") {
