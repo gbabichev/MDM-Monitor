@@ -87,6 +87,8 @@ struct MDM_MonitorApp: App {
                         updateCenter.checkForUpdates(trigger: .automaticLaunch)
                     }
 
+                    notificationCoordinator.clearDeliveredNotifications()
+
                     if monitor.notificationsEnabled {
                         notificationCoordinator.requestAuthorizationIfNeeded()
                     }
